@@ -12,7 +12,8 @@
 ### 饕餮海
 
 [集思录主页](https://www.jisilu.cn/people/%E9%A5%95%E9%A4%AE%E6%B5%B7)
-[饕餮海](https://xueqiu.com/u/1314783718?md5__1038=n4IxyD2D9D0DniCQDsWmhiDB7CGCWlCnnIieD)
+
+[雪球主页](https://xueqiu.com/u/1314783718?md5__1038=n4IxyD2D9D0DniCQDsWmhiDB7CGCWlCnnIieD)
 
 
 ## 工具网站
