@@ -10,3 +10,5 @@
 [2024最强免费VPN BPB最新版本部署小白教程！](https://www.youtube.com/watch?v=W--REj3J8yc)
 
 部署方法和edgetunnel大差不差，都是workers或pages，绑上几个变量，自定义域名什么的。
+
+[教程博客](https://kjgx668.blogspot.com/2024/12/youtube4k-free-vpn-bpb2.7-Cloudflare-vless-trojan-v2rayN-sing-box-Clash%20Verge-nekoray-Shadowrocket.html)
