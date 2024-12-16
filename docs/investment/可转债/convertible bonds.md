@@ -9,6 +9,12 @@
 
 [雪球主页](https://www.jisilu.cn/people/%E6%8C%81%E6%9C%89%E5%B0%81%E5%9F%BA)
 
+### yyb凌波
+
+[集思录主页](https://www.jisilu.cn/people/yyb%E5%87%8C%E6%B3%A2)
+
+[策略说明2024](https://www.jisilu.cn/question/489447)
+
 ### 饕餮海
 
 [集思录主页](https://www.jisilu.cn/people/%E9%A5%95%E9%A4%AE%E6%B5%B7)
