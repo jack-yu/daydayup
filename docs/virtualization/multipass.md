@@ -233,3 +233,12 @@ multipass transfer /etc/crontab /etc/fstab keen-yak:/home/michal
 
 
 [如何与实例共享数据官方文档](https://multipass.run/docs/share-data-with-an-instance)
+
+
+### Trouble Shooting
+
+[排查启动/启动问题](https://discourse.ubuntu.com/t/troubleshoot-launch-start-issues/48104)
+
+本主题介绍启动或启动实例时的常见问题，例如超时或“未知状态”错误。
+
+这些问题的发生可能有多种不同的原因。由于 Multipass 依赖于在默认接口上具有 IP 地址的实例来建立 SSH 连接，因此它们通常（但并非总是）与 IP 分配或连接问题相关联。
