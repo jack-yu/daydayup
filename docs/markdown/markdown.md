@@ -46,3 +46,8 @@
 #### 设置字体颜色
 
 [【Markdown笔记】设置字体颜色](https://blog.csdn.net/u012028275/article/details/115445362)
+
+#### 图片大小与位置的调整
+
+[Markdown中图片对齐方式及尺寸设置](https://blog.csdn.net/tugepaopaoo/article/details/130196496)
+
