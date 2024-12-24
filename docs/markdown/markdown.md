@@ -51,3 +51,19 @@
 
 [Markdown中图片对齐方式及尺寸设置](https://blog.csdn.net/tugepaopaoo/article/details/130196496)
 
+下面的方式好用
+
+```
+<img src="https://i-blog.csdnimg.cn/blog_migrate/348f8ce8a69c97427cf55dde66f1b4c7.png"  width="600" />
+```
+
+调整对齐方式：
+
+```
+<p align = "center">    
+<img  src="https://i-blog.csdnimg.cn/blog_migrate/348f8ce8a69c97427cf55dde66f1b4c7.png" width="400" />
+</p>
+
+```
+
+可以支持多个图片一起对齐，记得项目间不要加空行
