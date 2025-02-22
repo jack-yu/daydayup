@@ -37,6 +37,205 @@ QMT 系统提供两大类(事件驱动与定时任务)，共三种运行机制�
 ![](https://dict.thinktrader.net/assets/%E5%86%85%E7%BD%AEAPI_%E4%B8%89%E7%A7%8D%E6%9C%BA%E5%88%B6%E5%AF%B9%E6%AF%94-bc32690d.png)
 
 
+# 2025年2月21日17:49:10
+
+继续学习官方文档。
+
+### 逐 K 线驱动：handlebar
+handlebar是主图历史 k 线+盘中订阅推送。运行开始时，所选周期历史 k 线从左向右每根触发一次handlebar函数调用。盘中时，主图品种每个新分笔数据到达，触发一次handlebar函数调用。
+
+*啥叫新分笔数据？？？*
+
+### 事件驱动 ：subscribe 订阅推送
+盘中订阅指定品种的分笔数据，新分笔到达时，触发指定的回调函数。
+
+### 定时任务 ：run_time 定时运行
+指定固定的时间间隔，持续触发指定的回调函数
+
+看客服给的视频里用的是第一个handlebar方法。
+
+如果要定时处理应该用第三个方法“定时任务”吧。
+
+第二个“事件驱动”没写明白。先放这里吧。
+
+看起来回测只能用handlebar，实盘三种都可以用啊。
+
+![](https://dict.thinktrader.net/assets/%E5%86%85%E7%BD%AEAPI_%E4%B8%8D%E5%90%8C%E6%9C%BA%E5%88%B6%E5%8C%B9%E9%85%8D%E4%B8%8D%E5%90%8C%E5%9C%BA%E6%99%AF%E9%9C%80%E6%B1%82-6942d075.png)
+
+
+## 逐 K 线驱动（handlebar）示例
+
+这个好，举个例子~~
+
+> 在编写一个策略时，首先需要在代码的最前一行写上： #coding:gbk 统一脚本的编码格式是GBK
+
+为啥不是utf-8 :joy:
+
+直接给代码了
+
+```
+#coding:gbk
+
+#导入常用库
+import pandas as pd
+import numpy as np
+import talib
+#示例说明：本策略，通过计算快慢双均线，在金叉时买入，死叉时做卖出 点击回测运行 主图选择要交易的股票品种
+
+def init(C):
+	#init handlebar函数的入参是ContextInfo对象 可以缩写为C
+	#设置测试标的为主图品种
+	C.stock= C.stockcode + '.' +C.market
+	#line1和line2分别为两条均线期数
+	C.line1=10   #快线参数
+	C.line2=20   #慢线参数
+	#accountid为测试的ID 回测模式资金账号可以填任意字符串
+	C.accountid = "testS"  
+
+def handlebar(C):
+	#当前k线日期
+	bar_date = timetag_to_datetime(C.get_bar_timetag(C.barpos), '%Y%m%d%H%M%S')
+	#回测不需要订阅最新行情使用本地数据速度更快 指定subscribe参数为否. 如果回测多个品种 需要先下载对应周期历史数据 
+	local_data = C.get_market_data_ex(['close'], [C.stock], end_time = bar_date, period = C.period, count = max(C.line1, C.line2), subscribe = False)
+	close_list = list(local_data[C.stock].iloc[:, 0])
+	#将获取的历史数据转换为DataFrame格式方便计算
+	#如果目前未持仓，同时快线穿过慢线，则买入8成仓位
+	if len(close_list) <1:
+		print(bar_date, '行情不足 跳过')
+	line1_mean = round(np.mean(close_list[-C.line1:]), 2)
+	line2_mean = round(np.mean(close_list[-C.line2:]), 2)
+	print(f"{bar_date} 短均线{line1_mean} 长均线{line2_mean}")
+	account = get_trade_detail_data('test', 'stock', 'account')
+	account = account[0]
+	available_cash = int(account.m_dAvailable)
+	holdings = get_trade_detail_data('test', 'stock', 'position')
+	holdings = {i.m_strInstrumentID + '.' + i.m_strExchangeID : i.m_nVolume for i in holdings}
+	holding_vol = holdings[C.stock] if C.stock in holdings else 0
+	if holding_vol == 0 and line1_mean > line2_mean:
+		vol = int(available_cash / close_list[-1] / 100) * 100
+		#下单开仓
+		passorder(23, 1101, C.accountid, C.stock, 5, -1, vol, C)
+		print(f"{bar_date} 开仓")
+		C.draw_text(1, 1, '开')
+	#如果目前持仓中，同时快线下穿慢线，则全部平仓
+	elif holding_vol > 0 and line1_mean < line2_mean:
+		#状态变更为未持仓
+		C.holding=False
+		#下单平仓
+		passorder(24, 1101, C.accountid, C.stock, 5, -1, holding_vol, C)
+		print(f"{bar_date} 平仓")
+		C.draw_text(1, 1, '平')
+
+```
+
+这代码就是刚才视频里讲的例子啊。
+
+> #回测不需要订阅最新行情使用本地数据速度更快 指定subscribe参数为否. 如果回测多个品种 需要先下载对应周期历史数据 
+	
+这段代码意思不难理解。细节还有地方不清楚，特别是passorder方法的调用，好多硬编码。。。写文档的人和做框架的人python水平估计很一般啊 。。。 :joy:
+
+## 实盘示例-基于 handlebar
+
+上面是回测的例子，下面讲实盘。很合理。
+
+>Handlebar 方法会在历史 K 线上逐 K 线调用，系统会保存函数所做更改。<br>
+在盘中交易时间，handlebar 函数会随行情推送（tick 数据）被调用，当一个 tick 数据为所在 K 线最后一个 tick 时，此 tick 调用的 handlebar 所做的更改会被系统保存，如有交易指令，会在下一根K 线的第一个 tick 到来时发送；其他 tick 可以打印运行结果，但 handlebar 所做更改不会被保存，也不会发送交易信号。
+
+这一段写的不是很清楚呢，盘中K线是什么意思，1分钟K线？5分钟、小时K线？tick是几秒来一次？
+
+先看看代码吧：
+
+```
+#coding:gbk
+
+# 导入包
+import pandas as pd
+import numpy as np
+import datetime
+
+"""
+示例说明：双均线实盘策略，通过计算快慢双均线，在金叉时买入，死叉时做卖出
+"""
+
+class a():
+	pass
+A = a() #创建空的类的实例 用来保存委托状态 
+
+
+def init(C):
+	A.stock= C.stockcode + '.' + C.market #品种为模型交易界面选择品种
+	A.acct= account #账号为模型交易界面选择账号
+	A.acct_type= accountType #账号类型为模型交易界面选择账号
+	A.amount = 10000 #单笔买入金额 触发买入信号后买入指定金额
+	A.line1=17   #快线周期
+	A.line2=27   #慢线周期
+	A.waiting_list = [] #未查到委托列表 存在未查到委托情况暂停后续报单 防止超单
+	A.buy_code = 23 if A.acct_type == 'STOCK' else 33 #买卖代码 区分股票 与 两融账号
+	A.sell_code = 24 if A.acct_type == 'STOCK' else 34
+	print(f'双均线实盘示例{A.stock} {A.acct} {A.acct_type} 单笔买入金额{A.amount}')
+
+def handlebar(C):
+	#跳过历史k线
+	if not C.is_last_bar():
+		return
+	now = datetime.datetime.now()
+	now_time = now.strftime('%H%M%S')
+	# 跳过非交易时间
+	if now_time < '093000' or now_time > "150000":
+		return
+	account = get_trade_detail_data(A.acct, A.acct_type, 'account')
+	if len(account)==0:
+		print(f'账号{A.acct} 未登录 请检查')
+		return
+	account = account[0]
+	available_cash = int(account.m_dAvailable)
+	#如果有未查到委托 查询委托
+	if A.waiting_list:
+		found_list = []
+		orders = get_trade_detail_data(A.acct, A.acct_type, 'order')
+		for order in orders:
+			if order.m_strRemark in A.waiting_list:
+				found_list.append(order.m_strRemark)
+		A.waiting_list = [i for i in A.waiting_list if i not in found_list]
+	if A.waiting_list:
+		print(f"当前有未查到委托 {A.waiting_list} 暂停后续报单")
+		return
+	holdings = get_trade_detail_data(A.acct, A.acct_type, 'position')
+	holdings = {i.m_strInstrumentID + '.' + i.m_strExchangeID : i.m_nCanUseVolume for i in holdings}
+	#获取行情数据
+	data = C.get_market_data_ex(["close"],[A.stock],period = '1d',count = max(A.line1, A.line2)+1)
+	close_list = data[A.stock].values
+	if len(close_list) < max(A.line1, A.line2)+1:
+		print('行情长度不足(新上市或最近有停牌) 跳过运行')
+		return
+	pre_line1 = np.mean(close_list[-A.line1-1: -1])
+	pre_line2 = np.mean(close_list[-A.line2-1: -1])
+	current_line1 = np.mean(close_list[-A.line1:])
+	current_line2 = np.mean(close_list[-A.line2:])
+	#如果快线穿过慢线，则买入委托 当前无持仓 买入
+	vol = int(A.amount / close_list[-1] / 100) * 100 #买入数量 向下取整到100的整数倍
+	if A.amount < available_cash and vol >= 100 and A.stock not in holdings and pre_line1 < pre_line2 and current_line1 > current_line2:
+		#下单开仓 ，参数说明可搜索PY交易函数 passorder
+		msg = f"双均线实盘 {A.stock} 上穿均线 买入 {vol}股"
+		passorder(A.buy_code, 1101, A.acct, A.stock, 14, -1, vol, '双均线实盘', 2 , msg, C)
+		print(msg)
+		A.waiting_list.append(msg)
+	#如果快线下穿慢线，则卖出委托
+	if A.stock in holdings and holdings[A.stock] > 0 and pre_line1 > pre_line2 and current_line1 < current_line2:
+		msg = f"双均线实盘 {A.stock} 下穿均线 卖出 {holdings[A.stock]}股"
+		passorder(A.sell_code, 1101, A.acct, A.stock, 14, -1, holdings[A.stock], '双均线实盘', 2 , msg, C)
+		print(msg)
+		A.waiting_list.append(msg)
+
+```
+
+
+这段代码有点东西，至少把几个硬编码的数字是干啥的讲了。虽然大概也猜到了。
+
+>A.buy_code = 23 if A.acct_type == 'STOCK' else 33 #买卖代码 区分股票 与 两融账号<br>
+A.sell_code = 24 if A.acct_type == 'STOCK' else 34
+
+
 
 
 # 文档学习
@@ -45,14 +244,14 @@ QMT 系统提供两大类(事件驱动与定时任务)，共三种运行机制�
  
 [国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf](../../../../resources/量化/国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf)
 
-[国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf](../../../../resources/量化/国金QMT极速策略交易系统-普通算法交易参数说明.pdf)
+[国金QMT极速策略交易系统-普通算法交易参数说明.pdf](../../../../resources/量化/国金QMT极速策略交易系统-普通算法交易参数说明.pdf)
 
-[国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf](../../../../resources/量化/国金QMT极速策略交易系统-网格策略使用手册202002.pdf)
+[国金QMT极速策略交易系统-网格策略使用手册202002.pdf](../../../../resources/量化/国金QMT极速策略交易系统-网格策略使用手册202002.pdf)
 
-[国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf](../../../../resources/量化/国金QMT极速策略交易系统-智能算法交易介绍202008.pdf)
+[国金QMT极速策略交易系统-智能算法交易介绍202008.pdf](../../../../resources/量化/国金QMT极速策略交易系统-智能算法交易介绍202008.pdf)
 
 
-[国金QMT极速策略交易系统_模型资料_Python_API_说明文档_Python3.pdf](../../../../resources/量化/国金QMT极速策略交易系统-VBA模型编辑使用手册202002.pdf)
+[国金QMT极速策略交易系统-VBA模型编辑使用手册202002.pdf](../../../../resources/量化/国金QMT极速策略交易系统-VBA模型编辑使用手册202002.pdf)
 
 
 
@@ -169,35 +368,5 @@ def signal(ContextInfo):
 	#print sell
 	return buy,sell           #买入卖出备选
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```
+
